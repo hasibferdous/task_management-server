@@ -60,6 +60,13 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/get-workspaces', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            let query = { "users.uid": decoded._id };
+            const cursor = await workspaceCollection.find(query).sort({ created: -1 }, function (err, cursor) { }).toArray();
+            res.send(cursor);
+        });
+
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
             const query = { email: u.email };
