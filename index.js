@@ -100,6 +100,13 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/workspace-boards/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { wid: id };
+            const result = await boardsCollection.find(query).toArray();
+            res.send(result);
+        })
+
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
             const query = { email: u.email };
