@@ -46,7 +46,8 @@ async function run() {
                 s.created = day;
                 s.users = [
                     { uid: decoded._id, date: day, role: 'admin', invited: false }
-                ]
+                ];
+                console.log(s);
                 result = await workspaceCollection.insertOne(s);
             } else {
                 const query = { _id: ObjectId(s._id) }
@@ -67,6 +68,18 @@ async function run() {
             res.send(cursor);
         });
 
+        app.post('/get-workspace-member', verifyJWT, async (req, res) => {
+            const uid = req.body;
+            for (let i = 0; i < uid.length; i++) {
+                uid[i] = ObjectId(uid[i]);
+            }
+            const query = { _id: { $in: uid } };
+            const cursor = userCollection.find(query)
+            const c = await cursor.toArray();
+            res.send(c);
+        });
+
+
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
             const query = { email: u.email };
@@ -77,7 +90,7 @@ async function run() {
                 user = await userCollection.findOne(query);
             }
             if (user) {
-                let token = jwt.sign({ email: u.email, _id: u._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+                let token = jwt.sign({ email: user.email, _id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
                 let role = user.role;
                 return res.send({ token, role });
             }
