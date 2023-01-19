@@ -35,6 +35,7 @@ async function run() {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('taskMaster').collection('users');
         const workspaceCollection = client.db('taskMaster').collection('workspaces');
+        const boardsCollection = client.db('taskMaster').collection('boards');
 
         app.post('/create-update-workspace', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
@@ -47,7 +48,6 @@ async function run() {
                 s.users = [
                     { uid: decoded._id, date: day, role: 'admin', invited: false }
                 ];
-                console.log(s);
                 result = await workspaceCollection.insertOne(s);
             } else {
                 const query = { _id: ObjectId(s._id) }
@@ -79,6 +79,26 @@ async function run() {
             res.send(c);
         });
 
+        app.post('/create-update-workspace-board', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            const s = req.body;
+            let result;
+            if (s._id == 'new') {
+                delete s._id;
+                const day = new Date(Date.now());
+                s.created = day;
+                result = await boardsCollection.insertOne(s);
+            } else {
+                const query = { _id: ObjectId(s._id) }
+                delete s._id;
+                const updatedDoc = {
+                    $set: s
+                }
+                result = await boardsCollection.updateOne(query, updatedDoc);
+
+            }
+            res.send(result);
+        });
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
