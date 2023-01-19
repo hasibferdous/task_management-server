@@ -27,16 +27,88 @@ function verifyJWT(req, res, next) {
     })
 }
 
+
 const uri = `mongodb+srv://${process.env.DBV_USER}:${process.env.DB_PASSWORD}@cluster0.yzlpmea.mongodb.net/?retryWrites=true&w=majority`;
 
 async function run() {
     try {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('taskMaster').collection('users');
+        const workspaceCollection = client.db('taskMaster').collection('workspaces');
+        const boardsCollection = client.db('taskMaster').collection('boards');
+
+        app.post('/create-update-workspace', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            const s = req.body;
+            let result;
+            if (s._id == 'new') {
+                delete s._id;
+                const day = new Date(Date.now());
+                s.created = day;
+                s.users = [
+                    { uid: decoded._id, date: day, role: 'admin', invited: false }
+                ];
+                result = await workspaceCollection.insertOne(s);
+            } else {
+                const query = { _id: ObjectId(s._id) }
+                delete s._id;
+                const updatedDoc = {
+                    $set: s
+                }
+                result = await workspaceCollection.updateOne(query, updatedDoc);
+
+            }
+            res.send(result);
+        });
+
+        app.get('/get-workspaces', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            let query = { "users.uid": decoded._id };
+            const cursor = await workspaceCollection.find(query).sort({ created: -1 }, function (err, cursor) { }).toArray();
+            res.send(cursor);
+        });
+
+        app.post('/get-workspace-member', verifyJWT, async (req, res) => {
+            const uid = req.body;
+            for (let i = 0; i < uid.length; i++) {
+                uid[i] = ObjectId(uid[i]);
+            }
+            const query = { _id: { $in: uid } };
+            const cursor = userCollection.find(query)
+            const c = await cursor.toArray();
+            res.send(c);
+        });
+
+        app.post('/create-update-workspace-board', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            const s = req.body;
+            let result;
+            if (s._id == 'new') {
+                delete s._id;
+                const day = new Date(Date.now());
+                s.created = day;
+                result = await boardsCollection.insertOne(s);
+            } else {
+                const query = { _id: ObjectId(s._id) }
+                delete s._id;
+                const updatedDoc = {
+                    $set: s
+                }
+                result = await boardsCollection.updateOne(query, updatedDoc);
+
+            }
+            res.send(result);
+        });
+
+        app.get('/workspace-boards/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { wid: id };
+            const result = await boardsCollection.find(query).toArray();
+            res.send(result);
+        })
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
-
             const query = { email: u.email };
             let user = await userCollection.findOne(query);
             if (!user && u?.insert) {
@@ -45,7 +117,7 @@ async function run() {
                 user = await userCollection.findOne(query);
             }
             if (user) {
-                let token = jwt.sign({ email: u.email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+                let token = jwt.sign({ email: user.email, _id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
                 let role = user.role;
                 return res.send({ token, role });
             }
