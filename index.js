@@ -82,6 +82,7 @@ async function run() {
         app.post('/create-update-workspace-board', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
             const s = req.body;
+
             let result;
             if (s._id == 'new') {
                 delete s._id;
@@ -89,12 +90,13 @@ async function run() {
                 s.created = day;
                 result = await boardsCollection.insertOne(s);
             } else {
+                const options = {upsert: true};
                 const query = { _id: ObjectId(s._id) }
                 delete s._id;
                 const updatedDoc = {
-                    $set: s
+                    $set: { name:s.name}
                 }
-                result = await boardsCollection.updateOne(query, updatedDoc);
+                result = await boardsCollection.updateOne(query, updatedDoc,options);
 
             }
             res.send(result);
