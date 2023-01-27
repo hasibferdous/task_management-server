@@ -36,6 +36,7 @@ async function run() {
         const userCollection = client.db('taskMaster').collection('users');
         const workspaceCollection = client.db('taskMaster').collection('workspaces');
         const boardsCollection = client.db('taskMaster').collection('boards');
+        const tasksCollection = client.db('taskMaster').collection('tasks');
 
         app.post('/create-update-workspace', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
@@ -90,14 +91,12 @@ async function run() {
                 s.created = day;
                 result = await boardsCollection.insertOne(s);
             } else {
-                const options = { upsert: true };
                 const query = { _id: ObjectId(s._id) }
                 delete s._id;
                 const updatedDoc = {
-                    $set: { name: s.name }
+                    $set: s
                 }
-                result = await boardsCollection.updateOne(query, updatedDoc, options);
-
+                result = await boardsCollection.updateOne(query, updatedDoc);
             }
             res.send(result);
         });
@@ -109,10 +108,17 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/board/get_task_list/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { boradId: id };
+            const result = await tasksCollection.find(query).toArray();
+            res.send(result);
+        })
+
         app.post('/invite-workspace-member', verifyJWT, async (req, res) => {
             const s = req.body;
             const email = s.email;
-            const query2 = { email: u.email };
+            const query2 = { email: email };
             let user = await userCollection.findOne(query2);
             if (!user) {
                 return res.send({ message: 'User not found.' });
@@ -130,15 +136,15 @@ async function run() {
 
             if (result && result[0]) {
                 let users = result[0].users ? result[0].users : [];
-                users = users.find(item => item.uid == user._id);
-                if (!users) {
+                let inlist = users.find(item => item.uid == user._id);
+                if (!inlist) {
                     const day = new Date(Date.now());
                     users.push({ uid: user._id, date: day, role: 'admin', invited: true });
                 }
                 const updatedDoc = { $set: { users } };
                 let result2 = await workspaceCollection.updateOne(query, updatedDoc);
             }
-            return res.send({ message: 'Successfully sent the invitation' });
+            return res.send({ message: 'Successfully sent.' });
         });
 
 
