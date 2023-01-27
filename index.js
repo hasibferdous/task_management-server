@@ -108,6 +108,27 @@ async function run() {
             res.send(result);
         })
 
+        app.post('/create-update-task', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            const s = req.body;
+
+            let result;
+            if (s._id == 'new') {
+                delete s._id;
+                const day = new Date(Date.now());
+                s.created = day;
+                result = await tasksCollection.insertOne(s);
+            } else {
+                const query = { _id: ObjectId(s._id) }
+                delete s._id;
+                const updatedDoc = {
+                    $set: s
+                }
+                result = await tasksCollection.updateOne(query, updatedDoc);
+            }
+            res.send(result);
+        });
+
         app.get('/board/get_task_list/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { boradId: id };
