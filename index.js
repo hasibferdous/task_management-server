@@ -90,13 +90,13 @@ async function run() {
                 s.created = day;
                 result = await boardsCollection.insertOne(s);
             } else {
-                const options = {upsert: true};
+                const options = { upsert: true };
                 const query = { _id: ObjectId(s._id) }
                 delete s._id;
                 const updatedDoc = {
-                    $set: { name:s.name}
+                    $set: { name: s.name }
                 }
-                result = await boardsCollection.updateOne(query, updatedDoc,options);
+                result = await boardsCollection.updateOne(query, updatedDoc, options);
 
             }
             res.send(result);
@@ -108,6 +108,39 @@ async function run() {
             const result = await boardsCollection.find(query).toArray();
             res.send(result);
         })
+
+        app.post('/invite-workspace-member', verifyJWT, async (req, res) => {
+            const s = req.body;
+            const email = s.email;
+            const query2 = { email: u.email };
+            let user = await userCollection.findOne(query2);
+            if (!user) {
+                return res.send({ message: 'User not found.' });
+            }
+            const query = { _id: ObjectId(s.wid) };
+            const result = await workspaceCollection.aggregate([
+                {
+                    $project: {
+                        users: 1
+                    }
+                }, {
+                    $match: query
+                }, { $limit: 1 }
+            ]).toArray();
+
+            if (result && result[0]) {
+                let users = result[0].users ? result[0].users : [];
+                users = users.find(item => item.uid == user._id);
+                if (!users) {
+                    const day = new Date(Date.now());
+                    users.push({ uid: user._id, date: day, role: 'admin', invited: true });
+                }
+                const updatedDoc = { $set: { users } };
+                let result2 = await workspaceCollection.updateOne(query, updatedDoc);
+            }
+            return res.send({ message: 'Successfully sent the invitation' });
+        });
+
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
