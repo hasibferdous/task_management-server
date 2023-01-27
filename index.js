@@ -100,11 +100,19 @@ async function run() {
             }
             res.send(result);
         });
-
+        //get all board by id
         app.get('/workspace-boards/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { wid: id };
             const result = await boardsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //get single board
+        app.get('/board/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await boardsCollection.findOne(query);
             res.send(result);
         })
 
