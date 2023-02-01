@@ -35,21 +35,23 @@ async function run() {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('taskMaster').collection('users');
         const workspaceCollection = client.db('taskMaster').collection('workspaces');
+        const workspaceUsersCollection = client.db('taskMaster').collection('workspace_user');
         const boardsCollection = client.db('taskMaster').collection('boards');
         const tasksCollection = client.db('taskMaster').collection('tasks');
 
         app.post('/create-update-workspace', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
             const s = req.body;
-            let result;
+            let result = {};
             if (s._id == 'new') {
                 delete s._id;
                 const day = new Date(Date.now());
                 s.created = day;
-                s.users = [
-                    { uid: decoded._id, date: day, role: 'admin', invited: false }
-                ];
-                result = await workspaceCollection.insertOne(s);
+                const res = await workspaceCollection.insertOne(s);
+                if (res.insertedId) {
+                    let user = { wid: res.insertedId.toString(), uid: decoded._id, date: day, role: 'admin', invited: false };
+                    result = await workspaceUsersCollection.insertOne(user);
+                }
             } else {
                 const query = { _id: ObjectId(s._id) }
                 delete s._id;
@@ -57,26 +59,39 @@ async function run() {
                     $set: s
                 }
                 result = await workspaceCollection.updateOne(query, updatedDoc);
-
             }
             res.send(result);
         });
 
         app.get('/get-workspaces', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
-            let query = { "users.uid": decoded._id };
-            const cursor = await workspaceCollection.find(query).sort({ created: -1 }, function (err, cursor) { }).toArray();
+            let query;
+            let wid = [], cursor = [];
+            const query2 = { uid: decoded._id }
+            const result = await workspaceUsersCollection.find(query2).toArray();
+            if (result && result.length > 0) {
+                for (let i = 0; i < result.length; i++) {
+                    wid[i] = ObjectId(result[i].wid);
+                }
+                query = { _id: { $in: wid } };
+                cursor = await workspaceCollection.find(query).toArray();
+            }
             res.send(cursor);
         });
 
-        app.post('/get-workspace-member', verifyJWT, async (req, res) => {
-            const uid = req.body;
-            for (let i = 0; i < uid.length; i++) {
-                uid[i] = ObjectId(uid[i]);
+        app.post('/get-workspace-member/:id', verifyJWT, async (req, res) => {
+            let uid = [], c = [];
+            const id = req.params.id;
+            const query2 = { wid: id }
+            const result = await workspaceUsersCollection.find(query2).toArray();
+            if (result && result.length > 0) {
+                for (let i = 0; i < uid.length; i++) {
+                    uid[i] = ObjectId(result[i].uid);
+                }
+                const query = { _id: { $in: uid } };
+                const cursor = userCollection.find(query)
+                c = await cursor.toArray();
             }
-            const query = { _id: { $in: uid } };
-            const cursor = userCollection.find(query)
-            const c = await cursor.toArray();
             res.send(c);
         });
 
@@ -100,6 +115,7 @@ async function run() {
             }
             res.send(result);
         });
+
         //get all board by id
         app.get('/workspace-boards/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
@@ -147,31 +163,18 @@ async function run() {
         app.post('/invite-workspace-member', verifyJWT, async (req, res) => {
             const s = req.body;
             const email = s.email;
-            const query2 = { email: email };
-            let user = await userCollection.findOne(query2);
+            const query = { email: email };
+            let user = await userCollection.findOne(query);
             if (!user) {
                 return res.send({ message: 'User not found.' });
             }
-            const query = { _id: ObjectId(s.wid) };
-            const result = await workspaceCollection.aggregate([
-                {
-                    $project: {
-                        users: 1
-                    }
-                }, {
-                    $match: query
-                }, { $limit: 1 }
-            ]).toArray();
 
-            if (result && result[0]) {
-                let users = result[0].users ? result[0].users : [];
-                let inlist = users.find(item => item.uid == user._id);
-                if (!inlist) {
-                    const day = new Date(Date.now());
-                    users.push({ uid: user._id, date: day, role: 'admin', invited: true });
-                }
-                const updatedDoc = { $set: { users } };
-                let result2 = await workspaceCollection.updateOne(query, updatedDoc);
+            const query2 = { uid: user._id, wid: s.wid };
+            let exist = await workspaceUsersCollection.findOne(query2);
+            if (!exist) {
+                const day = new Date(Date.now());
+                let user = { wid: s.wid, uid: user._id, date: day, role: 'admin', invited: true };
+                let result2 = await workspaceUsersCollection.insertOne(user);
             }
             return res.send({ message: 'Successfully sent.' });
         });
