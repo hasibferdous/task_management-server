@@ -85,7 +85,7 @@ async function run() {
             const query2 = { wid: id }
             const result = await workspaceUsersCollection.find(query2).toArray();
             if (result && result.length > 0) {
-                for (let i = 0; i < uid.length; i++) {
+                for (let i = 0; i < result.length; i++) {
                     uid[i] = ObjectId(result[i].uid);
                 }
                 const query = { _id: { $in: uid } };
@@ -173,8 +173,8 @@ async function run() {
             let exist = await workspaceUsersCollection.findOne(query2);
             if (!exist) {
                 const day = new Date(Date.now());
-                let user = { wid: s.wid, uid: user._id, date: day, role: 'admin', invited: true };
-                let result2 = await workspaceUsersCollection.insertOne(user);
+                let user2 = { wid: s.wid, uid: user._id.toString(), date: day, role: 'admin', invited: true };
+                let result2 = await workspaceUsersCollection.insertOne(user2);
             }
             return res.send({ message: 'Successfully sent.' });
         });
