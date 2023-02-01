@@ -85,7 +85,7 @@ async function run() {
             const query2 = { wid: id }
             const result = await workspaceUsersCollection.find(query2).toArray();
             if (result && result.length > 0) {
-                for (let i = 0; i < uid.length; i++) {
+                for (let i = 0; i < result.length; i++) {
                     uid[i] = ObjectId(result[i].uid);
                 }
                 const query = { _id: { $in: uid } };
