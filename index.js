@@ -174,6 +174,13 @@ async function run() {
             }
             res.send(result);
         });
+        //get comments by task id
+        app.get('/comments/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { taskId: id };
+            const result = await commentsCollection.find(query).toArray();
+            res.send(result);
+        })
 
         app.get('/board/get_task_list/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
