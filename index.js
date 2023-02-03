@@ -38,6 +38,7 @@ async function run() {
         const workspaceUsersCollection = client.db('taskMaster').collection('workspace_user');
         const boardsCollection = client.db('taskMaster').collection('boards');
         const tasksCollection = client.db('taskMaster').collection('tasks');
+        const commentsCollection = client.db('taskMaster').collection('comments');
 
         app.post('/create-update-workspace', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
