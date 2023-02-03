@@ -28,7 +28,7 @@ function verifyJWT(req, res, next) {
 }
 
 
-const uri = `mongodb+srv://${process.env.DBV_USER}:${process.env.DB_PASSWORD}@cluster0.qmkp10x.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DBV_USER}:${process.env.DB_PASSWORD}@cluster0.f1afyz8.mongodb.net/?retryWrites=true&w=majority`;
 
 async function run() {
     try {
