@@ -28,7 +28,7 @@ function verifyJWT(req, res, next) {
 }
 
 
-const uri = `mongodb+srv://${process.env.DBV_USER}:${process.env.DB_PASSWORD}@cluster0.yzlpmea.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DBV_USER}:${process.env.DB_PASSWORD}@cluster0.f1afyz8.mongodb.net/?retryWrites=true&w=majority`;
 
 async function run() {
     try {
@@ -37,6 +37,16 @@ async function run() {
         const workspaceCollection = client.db('taskMaster').collection('workspaces');
         const boardsCollection = client.db('taskMaster').collection('boards');
         const tasksCollection = client.db('taskMaster').collection('tasks');
+
+        const pricingOptionCollection = client.db('taskMaster').collection('pricingOptions');
+     
+
+        app.get('/pricingOptions', async(req, res)=>{
+            const query ={};
+            const options = await pricingOptionCollection.find(query).toArray();
+            res.send(options);
+        })
+
 
         app.post('/create-update-workspace', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
