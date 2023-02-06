@@ -234,8 +234,16 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({ role: c.role });
+            res.send({ role: c.role === "admin"});
         });
+        app.get('/allusers', verifyJWT, async (req, res) => {
+           
+            const query = {  };
+            const result =await  userCollection.find(query).toArray();
+           
+            res.send(result);
+        });
+
     }
     finally {
 
