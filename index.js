@@ -244,7 +244,7 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({ role: c.role === "admin"});
+            res.send({ role: c?.role === 'admin'});
         });
         app.get('/allusers', verifyJWT, async (req, res) => {
            
@@ -253,6 +253,14 @@ async function run() {
            
             res.send(result);
         });
+        app.delete('/delete/:id',verifyJWT,  async (req,res)=>{
+            const id = req.params.id;
+            const filter = {_id : ObjectId(id)};
+            const result = await userCollection.deleteOne(filter);
+           
+            res.send(result);
+      
+          })
 
     }
     finally {
