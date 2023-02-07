@@ -40,6 +40,16 @@ async function run() {
         const tasksCollection = client.db('taskMaster').collection('tasks');
         const commentsCollection = client.db('taskMaster').collection('comments');
 
+        const pricingOptionCollection = client.db('taskMaster').collection('pricingOptions');
+     
+
+        app.get('/pricingOptions', async(req, res)=>{
+            const query ={};
+            const options = await pricingOptionCollection.find(query).toArray();
+            res.send(options);
+        })
+
+
         app.post('/create-update-workspace', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
             const s = req.body;
