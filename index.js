@@ -41,12 +41,108 @@ async function run() {
         const commentsCollection = client.db('taskMaster').collection('comments');
 
         const pricingOptionCollection = client.db('taskMaster').collection('pricingOptions');
-     
+        const bookingsCollection = client.db('taskMaster').collection('bookings');
 
         app.get('/pricingOptions', async(req, res)=>{
             const query ={};
             const options = await pricingOptionCollection.find(query).toArray();
             res.send(options);
+        })
+
+        app.get('/pricingOptions/:id', async (req, res) => {
+            const id = req.params.id;
+           const query = { _id: ObjectId(id) };
+           const option = await pricingOptionCollection.findOne(query);
+           res.send(option);
+        })
+
+        app.get('/bookings', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+
+            const query = { email: email };
+            const bookings = await bookingsCollection.find(query).toArray();
+            res.send(bookings);
+        });
+
+        app.get('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const booking = await bookingsCollection.findOne(query);
+            res.send(booking);
+        })
+
+        app.post('/bookings', async (req, res) => {
+            const booking = req.body;
+            console.log(booking);
+            const query = {
+                email: booking.email,
+                price: booking.pricing
+            }
+
+            const alreadyBooked = await bookingsCollection.find(query).toArray();
+
+            if (alreadyBooked.length) {
+                const message = 'You already have a booking'
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await bookingsCollection.insertOne(booking);
+            res.send(result);
+        });
+
+
+        const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+        app.post('/create-payment-intent', async (req, res) => {
+            const booking = req.body;
+            const price = booking.price;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        app.post('/create-payment-intent', async (req, res) => {
+            const booking = req.body;
+            const price = booking.price;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        app.post('/payments', async (req, res) =>{
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            const id = payment.bookingId
+            const filter = {_id: ObjectId(id)}
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc)
+            res.send(result);
         })
 
 
