@@ -349,10 +349,31 @@ async function run() {
            
             res.send(result);
         });
+        app.get('/alltasks', verifyJWT, async (req, res) => {
+           
+            const query = {  };
+            const result =await  tasksCollection.find(query).toArray();
+           
+            res.send(result);
+        });
+        app.get('/allboards', verifyJWT, async (req, res) => {
+           
+            const query = {  };
+            const result =await  boardsCollection.find(query).toArray();
+           
+            res.send(result);
+        });
+        app.get('/allworkspace', verifyJWT, async (req, res) => {
+           
+            const query = {  };
+            const result =await  workspaceCollection.find(query).toArray();
+           
+            res.send(result);
+        });
         app.delete('/delete/:id',verifyJWT,  async (req,res)=>{
             const id = req.params.id;
             const filter = {_id : ObjectId(id)};
-            const result = await userCollection.deleteOne(filter);
+            const result = await boardsCollection.deleteOne(filter);
            
             res.send(result);
       
