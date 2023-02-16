@@ -97,8 +97,8 @@ async function run() {
         });
 
 
-        const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
         app.post('/create-payment-intent', async (req, res) => {
+            const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
             const booking = req.body;
             const price = booking.price;
             const amount = price * 100;
@@ -325,7 +325,7 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({ role: c?.role === 'admin' });
+            res.send({ role: c.role });
         });
 
         app.get('/allusers', verifyJWT, async (req, res) => {
