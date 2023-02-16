@@ -41,10 +41,10 @@ async function run() {
         const commentsCollection = client.db('taskMaster').collection('comments');
 
         const pricingOptionCollection = client.db('taskMaster').collection('pricingOptions');
-     
 
-        app.get('/pricingOptions', async(req, res)=>{
-            const query ={};
+
+        app.get('/pricingOptions', async (req, res) => {
+            const query = {};
             const options = await pricingOptionCollection.find(query).toArray();
             res.send(options);
         })
@@ -244,44 +244,41 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({ role: c?.role === 'admin'});
+            res.send({ role: c?.role === 'admin' });
         });
+
         app.get('/allusers', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  userCollection.find(query).toArray();
-           
+            const query = {};
+            const result = await userCollection.find(query).toArray();
             res.send(result);
         });
+
         app.get('/alltasks', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  tasksCollection.find(query).toArray();
-           
+            const query = {};
+            const result = await tasksCollection.find(query).toArray();
             res.send(result);
         });
+
         app.get('/allboards', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  boardsCollection.find(query).toArray();
-           
+            const query = {};
+            const result = await boardsCollection.find(query).toArray();
             res.send(result);
         });
+
         app.get('/allworkspace', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  workspaceCollection.find(query).toArray();
-           
+            const query = {};
+            const result = await workspaceCollection.find(query).toArray();
             res.send(result);
         });
-        app.delete('/delete/:id',verifyJWT,  async (req,res)=>{
+
+        app.delete('/delete/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
-            const filter = {_id : ObjectId(id)};
+            const filter = { _id: ObjectId(id) };
             const result = await boardsCollection.deleteOne(filter);
-           
+
             res.send(result);
-      
-          })
+
+        })
 
     }
     finally {
