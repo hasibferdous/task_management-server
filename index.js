@@ -41,19 +41,21 @@ async function run() {
         const commentsCollection = client.db('taskMaster').collection('comments');
 
         const pricingOptionCollection = client.db('taskMaster').collection('pricingOptions');
+        const paymentsCollection = client.db('taskMaster').collection('payments');
         const bookingsCollection = client.db('taskMaster').collection('bookings');
 
-        app.get('/pricingOptions', async(req, res)=>{
-            const query ={};
+
+        app.get('/pricingOptions', async (req, res) => {
+            const query = {};
             const options = await pricingOptionCollection.find(query).toArray();
             res.send(options);
         })
 
         app.get('/pricingOptions/:id', async (req, res) => {
             const id = req.params.id;
-           const query = { _id: ObjectId(id) };
-           const option = await pricingOptionCollection.findOne(query);
-           res.send(option);
+            const query = { _id: ObjectId(id) };
+            const option = await pricingOptionCollection.findOne(query);
+            res.send(option);
         })
 
         app.get('/bookings', verifyJWT, async (req, res) => {
@@ -95,8 +97,8 @@ async function run() {
         });
 
 
-        const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
         app.post('/create-payment-intent', async (req, res) => {
+            const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
             const booking = req.body;
             const price = booking.price;
             const amount = price * 100;
@@ -113,28 +115,11 @@ async function run() {
             });
         });
 
-        app.post('/create-payment-intent', async (req, res) => {
-            const booking = req.body;
-            const price = booking.price;
-            const amount = price * 100;
-
-            const paymentIntent = await stripe.paymentIntents.create({
-                currency: 'usd',
-                amount: amount,
-                "payment_method_types": [
-                    "card"
-                ]
-            });
-            res.send({
-                clientSecret: paymentIntent.client_secret,
-            });
-        });
-
-        app.post('/payments', async (req, res) =>{
+        app.post('/payments', async (req, res) => {
             const payment = req.body;
             const result = await paymentsCollection.insertOne(payment);
             const id = payment.bookingId
-            const filter = {_id: ObjectId(id)}
+            const filter = { _id: ObjectId(id) }
             const updatedDoc = {
                 $set: {
                     paid: true,
@@ -340,44 +325,67 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({ role: c?.role === 'admin'});
+            res.send({ role: c?.role });
         });
-        app.get('/allusers', verifyJWT, async (req, res) => {
-           
+
+        app.get('/allDatas', verifyJWT, async (req, res) => {
             const query = {  };
-            const result =await  userCollection.find(query).toArray();
-           
-            res.send(result);
+            const task =await  tasksCollection.find(query).toArray();
+            const board =await  boardsCollection.find(query).toArray();
+            const user =await  userCollection.find(query).toArray();
+            const workspace =await  workspaceCollection.find(query).toArray();
+            res.send([user, board, task, workspace,])
         });
-        app.get('/alltasks', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  tasksCollection.find(query).toArray();
-           
-            res.send(result);
-        });
-        app.get('/allboards', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  boardsCollection.find(query).toArray();
-           
-            res.send(result);
-        });
-        app.get('/allworkspace', verifyJWT, async (req, res) => {
-           
-            const query = {  };
-            const result =await  workspaceCollection.find(query).toArray();
-           
-            res.send(result);
-        });
+
         app.delete('/delete/:id',verifyJWT,  async (req,res)=>{
             const id = req.params.id;
             const filter = {_id : ObjectId(id)};
-            const result = await boardsCollection.deleteOne(filter);
+            const result = await userCollection.deleteOne(filter);
+            const workspace = await workspaceCollection.deleteOne(filter);
+            const board = await boardsCollection.deleteOne(filter);
+           
+            res.send([result,workspace,board]);
+      
+          });
+
+           app.get('/updateprofile', async (req,res)=>{
+            const email = req.query.email;
+            const query = {email:email};
+            const result = await userCollection.findOne(query);
            
             res.send(result);
-      
-          })
+
+         });
+
+         app.put('/update/:email', async (req,res)=>{
+            const updates = req.body;
+           const filter = {email:updates.email}
+           
+            const options = {upsert: true};
+            const updateddoc = {
+                $set:{
+                 name:updates.name,
+                 workplace:updates.workplace,
+                 univerty:updates.univerty,
+                 address:updates.address,
+                 come:updates.come,
+                 relationship:updates.relationship,
+                
+                
+                }
+            }
+            const result = await userCollection.updateMany(filter,updateddoc,options);
+            res.send(result);
+         });
+
+         app.get("/userboard/:id", async (req, res)=> {
+            const id = req.params.id
+            const query = { wid: id};
+           const result = await boardsCollection.find(query).toArray();
+            res.send(result);
+          });
+
+          
 
     }
     finally {
