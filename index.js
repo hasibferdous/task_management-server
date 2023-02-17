@@ -325,41 +325,67 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({ role: c.role });
+            res.send({ role: c?.role });
         });
 
-        app.get('/allusers', verifyJWT, async (req, res) => {
-            const query = {};
-            const result = await userCollection.find(query).toArray();
-            res.send(result);
+        app.get('/allDatas', verifyJWT, async (req, res) => {
+            const query = {  };
+            const task =await  tasksCollection.find(query).toArray();
+            const board =await  boardsCollection.find(query).toArray();
+            const user =await  userCollection.find(query).toArray();
+            const workspace =await  workspaceCollection.find(query).toArray();
+            res.send([user, board, task, workspace,])
         });
 
-        app.get('/alltasks', verifyJWT, async (req, res) => {
-            const query = {};
-            const result = await tasksCollection.find(query).toArray();
-            res.send(result);
-        });
-
-        app.get('/allboards', verifyJWT, async (req, res) => {
-            const query = {};
-            const result = await boardsCollection.find(query).toArray();
-            res.send(result);
-        });
-
-        app.get('/allworkspace', verifyJWT, async (req, res) => {
-            const query = {};
-            const result = await workspaceCollection.find(query).toArray();
-            res.send(result);
-        });
-
-        app.delete('/delete/:id', verifyJWT, async (req, res) => {
+        app.delete('/delete/:id',verifyJWT,  async (req,res)=>{
             const id = req.params.id;
-            const filter = { _id: ObjectId(id) };
-            const result = await boardsCollection.deleteOne(filter);
+            const filter = {_id : ObjectId(id)};
+            const result = await userCollection.deleteOne(filter);
+            const workspace = await workspaceCollection.deleteOne(filter);
+            const board = await boardsCollection.deleteOne(filter);
+           
+            res.send([result,workspace,board]);
+      
+          });
 
+           app.get('/updateprofile', async (req,res)=>{
+            const email = req.query.email;
+            const query = {email:email};
+            const result = await userCollection.findOne(query);
+           
             res.send(result);
 
-        })
+         });
+
+         app.put('/update/:email', async (req,res)=>{
+            const updates = req.body;
+           const filter = {email:updates.email}
+           
+            const options = {upsert: true};
+            const updateddoc = {
+                $set:{
+                 name:updates.name,
+                 workplace:updates.workplace,
+                 univerty:updates.univerty,
+                 address:updates.address,
+                 come:updates.come,
+                 relationship:updates.relationship,
+                
+                
+                }
+            }
+            const result = await userCollection.updateMany(filter,updateddoc,options);
+            res.send(result);
+         });
+
+         app.get("/userboard/:id", async (req, res)=> {
+            const id = req.params.id
+            const query = { wid: id};
+           const result = await boardsCollection.find(query).toArray();
+            res.send(result);
+          });
+
+          
 
     }
     finally {
