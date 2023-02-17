@@ -341,8 +341,10 @@ async function run() {
             const id = req.params.id;
             const filter = {_id : ObjectId(id)};
             const result = await userCollection.deleteOne(filter);
+            const workspace = await workspaceCollection.deleteOne(filter);
+            const board = await boardsCollection.deleteOne(filter);
            
-            res.send(result);
+            res.send([result,workspace,board]);
       
           });
 
@@ -375,6 +377,15 @@ async function run() {
             const result = await userCollection.updateMany(filter,updateddoc,options);
             res.send(result);
          });
+
+         app.get("/userboard/:id", async (req, res)=> {
+            const id = req.params.id
+            const query = { wid: id};
+           const result = await boardsCollection.find(query).toArray();
+            res.send(result);
+          });
+
+          
 
     }
     finally {
