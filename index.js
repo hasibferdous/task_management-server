@@ -343,8 +343,9 @@ async function run() {
             const result = await userCollection.deleteOne(filter);
             const workspace = await workspaceCollection.deleteOne(filter);
             const board = await boardsCollection.deleteOne(filter);
+            const task = await tasksCollection.deleteOne(filter);
            
-            res.send([result,workspace,board]);
+            res.send([result,workspace,board,task]);
       
           });
 
@@ -383,6 +384,14 @@ async function run() {
             const query = { wid: id};
            const result = await boardsCollection.find(query).toArray();
             res.send(result);
+          });
+
+         app.get("/alluserdatas/:uid", async (req, res)=> {
+            const id = req.params.uid
+            const query = { userId: id};
+           const result = await boardsCollection.find(query).toArray();
+           const tasks = await tasksCollection.find(query).toArray();
+            res.send([result,tasks]);
           });
 
           
