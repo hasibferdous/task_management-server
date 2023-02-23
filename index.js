@@ -337,17 +337,32 @@ async function run() {
             res.send([user, board, task, workspace,])
         });
 
-        app.delete('/delete/:id',verifyJWT,  async (req,res)=>{
+        app.delete('/delete/:task/:id',verifyJWT,  async (req,res)=>{
+            const task = req.params.task;
             const id = req.params.id;
             const filter = {_id : ObjectId(id)};
-            const result = await userCollection.deleteOne(filter);
-            const workspace = await workspaceCollection.deleteOne(filter);
-            const board = await boardsCollection.deleteOne(filter);
-            const task = await tasksCollection.deleteOne(filter);
+            let result ;
+            switch(task) {
+                case 'user':
+                 result = await userCollection.deleteOne(filter);
+                  break;
+                case 'board':
+                    result= await boardsCollection.deleteOne(filter);
+                  break;
+                case 'task':
+                    result = await tasksCollection.deleteOne(filter);
+                 
+                  break;
+                case  'workspace':
+                    result = await workspaceCollection.deleteOne(filter);
+                  break;
+                default:
+              }
            
-            res.send([result,workspace,board,task]);
+            res.send(result);
       
           });
+       
 
            app.get('/updateprofile', async (req,res)=>{
             const email = req.query.email;
