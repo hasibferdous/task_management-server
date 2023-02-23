@@ -43,6 +43,7 @@ async function run() {
         const pricingOptionCollection = client.db('taskMaster').collection('pricingOptions');
         const paymentsCollection = client.db('taskMaster').collection('payments');
         const bookingsCollection = client.db('taskMaster').collection('bookings');
+        const checkListCollection = client.db('taskMaster').collection('checkList');
 
 
         app.get('/pricingOptions', async (req, res) => {
@@ -408,6 +409,50 @@ async function run() {
            const tasks = await tasksCollection.find(query).toArray();
             res.send([result,tasks]);
           });
+        
+        
+        
+        
+        /* -------------------------------- checklist start ------------------------------- */
+        app.get('/check-list/:taskId', async (req, res) => {
+            const taskId = req.params.taskId;
+            const query = { taskId: taskId }
+            const checkList = await checkListCollection.find(query).toArray();
+            res.send(checkList);
+        });
+        app.post('/create-checklist-item', async (req, res) => {
+            const checkListItem = req.body;
+            const result = await checkListCollection.insertOne(checkListItem);
+            res.send(result);
+        });
+        app.put('/update-checklist-item/:itemId', async (req, res) => {
+            const id = req.params.itemId;
+            const query = { _id: new ObjectId(id) }
+            const updatedData = req.body;
+            const option = { upsert: true };
+            const updatedUserOperation = {
+                $set: { taskDoneActivity: !updatedData.taskDoneActivity }
+            }
+            const result = await checkListCollection.updateOne(query, updatedUserOperation, option)
+            res.send(result)
+            // res.send("success")
+        })
+        app.delete('/remove-checklist-item/:itemId', async (req, res) => {
+            const id = req.params.itemId;
+            const query = { _id: new ObjectId(id) }
+            const result = await checkListCollection.deleteOne(query);
+            res.send(result)
+        })
+        /* ------------------------------ checklist end ----------------------------- */
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
           
 
